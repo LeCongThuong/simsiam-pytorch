@@ -3,13 +3,13 @@
         "name": "fine-tuned",
         "backbone": "resnet50",
         "freeze": true,
-        "weights_path": "models/pretrained.pt"
+        "weights_path": "runs/Jan14_18-59-23_hmi/pretrained.pt"
     },
     "data": {
-        "path": "data/",
+        "path": "/home/hmi/Documents/thuong_doc/mocban/reconstruct_2d_2/japan_processed_test_imgs",
         "input_shape": [
-            96,
-            96
+            224,
+            224
         ],
         "num_classes": 10
     },

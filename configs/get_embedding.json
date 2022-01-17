@@ -1,0 +1,24 @@
+{
+    "model": {
+        "name": "embedding",
+        "backbone": "resnet50",
+        "pretrained": true,
+        "weights_path": "runs/Jan16_14-08-56_hmi/pretrained_45.pt"
+    },
+    "data": {
+        "path": "/mnt/hdd/thuonglc/mocban/ocr_retrieval_dataset/origin/dainam_dataset/tt4",
+        "input_shape": [
+            224,
+            224
+        ]
+    },
+    "create_embedding": {
+        "embedding_path": "assets/embedding_vector/embedding.npy",
+        "batch_size": 128,
+        "output_dir": "assets/embedding_vector"
+    },
+    "get_sim_img":{
+        "num_neighbor": 5
+    },
+    "device": "cuda"
+}

@@ -5,3 +5,5 @@ runs/
 data/
 models/
 *.pyc
+/assets/
+/runs/
