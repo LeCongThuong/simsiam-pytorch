@@ -1,28 +1,28 @@
 {
     "model": {
         "name": "pretrained",
-        "backbone": "resnet50",
+        "backbone": "resnet34",
         "pretrained": true,
-        "latent_dim": 2048,
-        "proj_hidden_dim": 2048,
-        "pred_hidden_dim": 512
+        "latent_dim": 512,
+        "proj_hidden_dim": 512,
+        "pred_hidden_dim": 128
     },
     "data": {
-        "path": "/mnt/hdd/thuonglc/mocban/ocr_retrieval_dataset/origin/dainam_dataset",
+        "path": "/mnt/hdd/thuonglc/mocban/ocr_retrieval_dataset/origin/dainam_64_dataset",
         "input_shape": [
-            224,
-            224
+            64,
+            64
         ],
-        "num_classes": 10
+        "p_blur": 0.5
     },
     "train": {
         "epochs": 100,
-        "batch_size": 96,
+        "batch_size": 512,
         "lr": 0.025,
         "momentum": 0.9,
         "weight_decay": 0.0001,
         "log_interval": 10,
-        "eval_inter": 500,
+        "eval_inter": 1000,
         "checkpoint_inter": 5
     },
     "device": "cuda"

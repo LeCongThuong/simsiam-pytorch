@@ -10,17 +10,22 @@ from torch.utils.tensorboard import SummaryWriter
 from simsiam.models import Encoder
 from simsiam.transforms import test_transforms
 from simsiam.dataset import DaiNamDataset
+import torch
+import timm
+
 
 
 def get_model(cfg):
-    model = Encoder(
-        backbone=cfg.model.backbone,
-        pretrained=cfg.model.pretrained
-    )
+    if cfg.use == 'finetuned':
+        model = Encoder(
+            backbone=cfg.model.backbone,
+            pretrained=False
+        )
 
-    if cfg.model.weights_path:
-        model.load_state_dict(torch.load(cfg.model.weights_path))
-
+        if cfg.model.weights_path:
+            model.load_state_dict(torch.load(cfg.model.weights_path))
+    else:
+        model = timm.create_model(cfg.model.backbone, pretrained=True, num_classes=0)
     model = model.to(cfg.device)
     return model
 
@@ -70,6 +75,6 @@ if __name__ == "__main__":
     with open(args.cfg, "r") as f:
         cfg = json.loads(f.read(), object_hook=lambda d: SimpleNamespace(**d))
 
-    model = get_model(cfg)
+    model = get_finetuned_model(cfg)
     dataloader = get_dataloader(cfg)
     embedding_stack = get_embedding(cfg, model, dataloader)

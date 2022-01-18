@@ -1,15 +1,15 @@
 {
+    "use": "pretrained",
     "model": {
         "name": "embedding",
-        "backbone": "resnet50",
-        "pretrained": true,
-        "weights_path": "runs/Jan16_14-08-56_hmi/pretrained_45.pt"
+        "backbone": "tf_efficientnetv2_s",
+        "weights_path": "runs/Jan17_18-38-37_hmi/pretrained_40.pt"
     },
     "data": {
         "path": "/mnt/hdd/thuonglc/mocban/ocr_retrieval_dataset/origin/dainam_dataset/tt4",
         "input_shape": [
-            224,
-            224
+            288,
+            288
         ]
     },
     "create_embedding": {

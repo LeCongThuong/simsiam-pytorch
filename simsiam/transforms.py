@@ -15,18 +15,15 @@ def augment_transforms(
     input_shape, device
 ) -> nn.Sequential:
     augs = nn.Sequential(
-        kornia.augmentation.ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, p=0.3),
         kornia.augmentation.RandomGrayscale(p=1),
-        kornia.augmentation.RandomAffine(degrees=10, translate=0.1, p=0.3),
-        kornia.augmentation.RandomHorizontalFlip(p=0.3),
-        kornia.augmentation.RandomGaussianBlur(kernel_size=(5, 5), sigma=(2.0, 2.0), p=0.3),
         kornia.augmentation.RandomResizedCrop(
             size=input_shape,
             scale=(0.2, 1.0),
             ratio=(0.75, 1.33),
-            p=0.3
+            p=1.0
         ),
-        kornia.augmentation.RandomErasing(p=0.3),
+        kornia.augmentation.RandomHorizontalFlip(p=0.5),
+        kornia.augmentation.RandomErasing(scale=(0.02, 0.5), value=1, p=0.5),
         kornia.augmentation.Normalize(
             mean=torch.tensor(MEAN),
             std=torch.tensor(STD)
@@ -36,9 +33,10 @@ def augment_transforms(
     return augs
 
 
-def load_transforms(input_shape: Tuple[int, int]) -> T.Compose:
+def load_transforms(input_shape: Tuple[int, int], p_blur) -> T.Compose:
     return T.Compose([
         T.Resize(size=input_shape, interpolation=Image.LANCZOS),
+        T.RandomApply([T.GaussianBlur(kernel_size=input_shape[0] // 20 * 2 + 1, sigma=(0.1, 2.0))], p=p_blur),
         T.ToTensor(),
     ])
 

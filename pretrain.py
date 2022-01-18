@@ -10,7 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from simsiam.models import SimSiam
 from simsiam.losses import negative_cosine_similarity
-from simsiam.transforms import augment_transforms
+from simsiam.transforms import augment_transforms, load_transforms, test_transforms
 from simsiam.dataset import DaiNamDataset
 from simsiam.utils import eval, calculate_std_l2_norm, AverageMeter
 
@@ -39,9 +39,10 @@ def main(cfg: SimpleNamespace) -> None:
         weight_decay=cfg.train.weight_decay
     )
 
-    train_dataset = DaiNamDataset(data_dir=cfg.data.path + "/train")
-    eval_dataset = DaiNamDataset(data_dir=cfg.data.path + "/eval")
-    print(len(train_dataset))
+    train_dataset = DaiNamDataset(data_dir=cfg.data.path + "/train", transform=load_transforms(cfg.data.input_shape,
+                                                                                               cfg.data.p_blur))
+    eval_dataset = DaiNamDataset(data_dir=cfg.data.path + "/eval", transform=test_transforms(cfg.data.input_shape))
+    # print(len(train_dataset))
     train_dataloader = torch.utils.data.DataLoader(
                     dataset=train_dataset,
                     batch_size=cfg.train.batch_size,
@@ -54,8 +55,8 @@ def main(cfg: SimpleNamespace) -> None:
     eval_dataloader = torch.utils.data.DataLoader(
                     dataset=eval_dataset,
                     batch_size=cfg.train.batch_size,
-                    shuffle=True,
-                    drop_last=True,
+                    shuffle=False,
+                    drop_last=False,
                     pin_memory=True,
                     num_workers=torch.multiprocessing.cpu_count()
     )

@@ -91,6 +91,6 @@ def resize_and_pad(img, tgt_size, padding_value=255):
 
 
 def preprocess_img(cv_img, tgt_size, padding_value=255, blur_winsize=3):
-    blur_test_img = cv2.GaussianBlur(cv_img, (blur_winsize, blur_winsize), 0)
-    resized_img = resize_and_pad(Image.fromarray(blur_test_img).convert('L'), tgt_size, padding_value)
+    # blur_test_img = cv2.GaussianBlur(cv_img, (blur_winsize, blur_winsize), 0)
+    resized_img = resize_and_pad(Image.fromarray(cv_img).convert('L'), tgt_size, padding_value)
     return resized_img

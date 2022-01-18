@@ -81,10 +81,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--img_path", type=str)
     parser.add_argument("--cfg", type=str, required=True, help="Path to config json file")
+    parser.add_argument("--force_gen_embed", action='store_true')
     args = parser.parse_args()
 
     with open(args.cfg, "r") as f:
         cfg = json.loads(f.read(), object_hook=lambda d: SimpleNamespace(**d))
+
+    if args.force_gen_embed:
+        cfg.create_embedding.embedding_path = ""
 
     embedding_search_model = EmbeddingSearch(cfg)
     embedding_search_model.visualize_sim_img(args.img_path)

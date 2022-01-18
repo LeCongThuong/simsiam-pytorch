@@ -53,7 +53,7 @@ class PredictorMLP(nn.Module):
     ) -> None:
         super().__init__()
         self.model = nn.Sequential(
-            nn.Linear(output_dim, hidden_dim),
+            nn.Linear(input_dim, hidden_dim),
             nn.BatchNorm1d(hidden_dim),
             nn.ReLU(inplace=True),
             nn.Linear(hidden_dim, output_dim)
