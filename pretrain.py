@@ -12,7 +12,10 @@ from simsiam.models import SimSiam
 from simsiam.losses import negative_cosine_similarity
 from simsiam.transforms import augment_transforms, load_transforms, test_transforms
 from simsiam.dataset import DaiNamDataset
-from simsiam.utils import eval, calculate_std_l2_norm, AverageMeter
+from simsiam.utils import eval_pretrained_model, calculate_std_l2_norm, AverageMeter
+from simsiam.finetune_dataset import FontDataset
+from pytorch_metric_learning.utils.accuracy_calculator import AccuracyCalculator
+from torchsummary import summary
 
 
 def main(cfg: SimpleNamespace) -> None:
@@ -21,17 +24,14 @@ def main(cfg: SimpleNamespace) -> None:
         backbone=cfg.model.backbone,
         latent_dim=cfg.model.latent_dim,
         proj_hidden_dim=cfg.model.proj_hidden_dim,
-        pred_hidden_dim=cfg.model.pred_hidden_dim
+        pred_hidden_dim=cfg.model.pred_hidden_dim,
+        load_pretrained=cfg.model.pretrained,
     )
     model = model.to(cfg.device)
     model.train()
 
-    # opt = torch.optim.SGD(
-    #     params=model.parameters(),
-    #     lr=cfg.train.lr,
-    #     momentum=cfg.train.momentum,
-    #     weight_decay=cfg.train.weight_decay
-    # )
+    summary(model, (3, 64, 64))
+
     opt = torch.optim.AdamW(
         params=model.parameters(),
         lr=cfg.train.lr,
@@ -39,10 +39,14 @@ def main(cfg: SimpleNamespace) -> None:
         weight_decay=cfg.train.weight_decay
     )
 
-    train_dataset = DaiNamDataset(data_dir=cfg.data.path + "/train", transform=load_transforms(cfg.data.input_shape,
-                                                                                               cfg.data.p_blur))
-    eval_dataset = DaiNamDataset(data_dir=cfg.data.path + "/eval", transform=test_transforms(cfg.data.input_shape))
-    # print(len(train_dataset))
+    train_transform = load_transforms(cfg.data.train.input_shape, cfg.data.train.augmentation.p_blur)
+    test_transform = test_transforms(cfg.data.eval.input_shape)
+    train_dataset = DaiNamDataset(data_dir=os.path.join(cfg.data.train.path, "train"), transform=train_transform)
+    eval_dataset = DaiNamDataset(data_dir=os.path.join(cfg.data.train.path, "eval"), transform=test_transform)
+
+    query_dataset = FontDataset(cfg, os.path.join(cfg.data.eval.path, 'query'), transform=test_transform)
+    pool_dataset = FontDataset(cfg, os.path.join(cfg.data.eval.path, 'eval'), transform=test_transform)
+
     train_dataloader = torch.utils.data.DataLoader(
                     dataset=train_dataset,
                     batch_size=cfg.train.batch_size,
@@ -61,11 +65,22 @@ def main(cfg: SimpleNamespace) -> None:
                     num_workers=torch.multiprocessing.cpu_count()
     )
 
-    transforms = augment_transforms(
-        input_shape=cfg.data.input_shape,
+    train_self_sup_transforms = augment_transforms(
+        cfg=cfg,
+        input_shape=cfg.data.train.input_shape,
+        train_flag=True,
         device=cfg.device
     )
-    # scheduler = torch.optim.lr_scheduler.StepLR(opt, step_size=10, gamma=0.8)
+
+    eval_self_sup_transforms = augment_transforms(
+        cfg=cfg,
+        input_shape=cfg.data.eval.input_shape,
+        train_flag=False,
+        device=cfg.device
+    )
+
+    accuracy_calculator = AccuracyCalculator(include=("precision_at_1", "mean_average_precision",
+                                                      'mean_average_precision_at_r', 'r_precision'), k=None)
     writer = SummaryWriter()
 
     n_iter = 0
@@ -74,16 +89,10 @@ def main(cfg: SimpleNamespace) -> None:
         std_tracker.reset()
         pbar = tqdm(enumerate(train_dataloader), total=len(train_dataloader), position=0, leave=False)
         for batch, x in pbar:
-            # print("Shape of x:", x.shape)
             opt.zero_grad()
 
             x = x.to(cfg.device)
-
-            # augment
-            # print("type of transform", transforms)
-            x1, x2 = transforms(x), transforms(x)
-            # print("After transform, shape of input: ", x1.shape, x2.shape)
-            # encode
+            x1, x2 = train_self_sup_transforms(x), train_self_sup_transforms(x)
             e1, e2 = model.encode(x1), model.encode(x2)
 
             # project
@@ -101,7 +110,6 @@ def main(cfg: SimpleNamespace) -> None:
             with torch.no_grad():
                 z1_std = calculate_std_l2_norm(z1)
                 z2_std = calculate_std_l2_norm(z2)
-                # print("Std", z2_std, z1_std)
                 std_tracker.update(z1_std + z2_std)
 
             pbar.set_description("Epoch {}, Loss: {:.4f}, Std: {:.6f}".format(epoch, float(loss), std_tracker.avg))
@@ -111,7 +119,8 @@ def main(cfg: SimpleNamespace) -> None:
                 writer.add_scalar(tag='loss/std', scalar_value=std_tracker.avg, global_step=n_iter)
 
             if n_iter % cfg.train.eval_inter == 0:
-                eval_loss = eval(eval_dataloader, model, transforms, cfg.device, writer, n_iter)
+                eval_pretrained_model(eval_dataloader, query_dataset, pool_dataset, model, eval_self_sup_transforms,
+                                 accuracy_calculator, cfg.device, writer, n_iter)
 
             n_iter += 1
 
@@ -127,5 +136,4 @@ if __name__ == "__main__":
 
     with open(args.cfg, "r") as f:
         cfg = json.loads(f.read(), object_hook=lambda d: SimpleNamespace(**d))
-
     main(cfg)

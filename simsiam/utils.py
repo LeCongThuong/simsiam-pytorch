@@ -1,5 +1,6 @@
 import torch
 from simsiam.losses import negative_cosine_similarity
+from pytorch_metric_learning import testers
 from tqdm.auto import tqdm
 import numpy as np
 import torch.nn.functional as F
@@ -7,13 +8,12 @@ from PIL import Image
 import cv2
 
 
-def eval(eval_dataloader, model, transforms, device, writer, n_iter):
+def eval_pretrained_model(eval_dataloader, query_dataset, pool_dataset, model, transforms, accuracy_calculator, device, writer, n_iter):
     losses = []
     model.eval()
     with torch.no_grad():
         for x in tqdm(eval_dataloader):
             x = x.to(device)
-
             # augment
             # print("type of transform", transforms)
             x1, x2 = transforms(x), transforms(x)
@@ -33,8 +33,14 @@ def eval(eval_dataloader, model, transforms, device, writer, n_iter):
             loss = loss1 / 2 + loss2 / 2
             losses.append(float(loss.cpu()))
     writer.add_scalar(tag="loss/eval", scalar_value=np.mean(losses), global_step=n_iter)
+
+    accuracies = eval_finetuned_model(query_dataset, pool_dataset, model.encoder, accuracy_calculator)
+
+    writer.add_scalar("eval/acc", scalar_value=float(accuracies["precision_at_1"]), global_step=n_iter)
+    writer.add_scalar("eval/mAP", scalar_value=float(accuracies['mean_average_precision']), global_step=n_iter)
+    writer.add_scalar("eval/r_precision", scalar_value=float(accuracies['r_precision']), global_step=n_iter)
+    writer.add_scalar("eval/mean_average_precision_at_r", scalar_value=float(accuracies['mean_average_precision_at_r']), global_step=n_iter)
     model.train()
-    return np.mean(losses)
 
 
 def calculate_std_l2_norm(z):
@@ -94,3 +100,26 @@ def preprocess_img(cv_img, tgt_size, padding_value=255, blur_winsize=3):
     # blur_test_img = cv2.GaussianBlur(cv_img, (blur_winsize, blur_winsize), 0)
     resized_img = resize_and_pad(Image.fromarray(cv_img).convert('L'), tgt_size, padding_value)
     return resized_img
+
+
+### convenient function from pytorch-metric-learning ###
+def get_all_embeddings(dataset, model):
+    tester = testers.BaseTester()
+    return tester.get_all_embeddings(dataset, model)
+
+
+### compute accuracy using AccuracyCalculator from pytorch-metric-learning ###
+def eval_finetuned_model(query_set, eval_set, model, accuracy_calculator):
+    query_embeddings, query_labels = get_all_embeddings(query_set, model)
+    eval_embeddings, eval_labels = get_all_embeddings(eval_set, model)
+    query_labels = query_labels.squeeze(1)
+    eval_labels = eval_labels.squeeze(1)
+    print("Computing accuracy")
+    accuracies = accuracy_calculator.get_accuracy(
+        query_embeddings, eval_embeddings, query_labels, eval_labels, False
+    )
+    print("Test set accuracy (Precision@1) = {}".format(accuracies["precision_at_1"]))
+    print(f"Test MAP: {accuracies['mean_average_precision']}")
+    print(f"Test r_Precision: {accuracies['r_precision']}")
+    print(f"Test mean_average_precision_at_r: {accuracies['mean_average_precision_at_r']}")
+    return accuracies

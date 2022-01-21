@@ -20,6 +20,7 @@ class EmbeddingSearch:
     def __init__(self, cfg):
         self.cfg = cfg
         self.model = get_model(cfg)
+        self.model.eval()
         print("Loading model is done")
         self.transform = test_transforms(cfg.data.input_shape)
 
@@ -38,7 +39,7 @@ class EmbeddingSearch:
         return get_embedding(self.cfg, self.model, dataloader)
 
     def _create_faiss_index(self):
-        index = faiss.IndexFlatL2(self.model.emb_dim)
+        index = faiss.IndexFlatL2(self.cfg.model.embedding_dim)
         index.add(self.embeddings)
         return index
 
@@ -46,21 +47,19 @@ class EmbeddingSearch:
         img = self.transform(img)
         img = torch.unsqueeze(img, dim=0)
         img = img.to(self.cfg.device)
+        print("Shape of img: ", img.shape)
         embedding = self.model(img)
         return torch.reshape(embedding, (1, -1)).detach().cpu().numpy()
 
     def get_sim_img(self, img, k_neigbor=5):
-        img = self._get_img(img, False)
+        # img = self._get_img(img, False)
         embedding = self._create_single_embedding(img)
         D, I = self.faiss_index.search(embedding, k_neigbor)
         return [self.img_src_dir[I[0][i]] for i in range(I.shape[1])]
 
-    def _get_img(self, img, preprocess=True):
-        if isinstance(img, str):
-            img = cv2.imread(img)
-        if preprocess:
-            img = preprocess_img(img, cfg.data.input_shape[0]).convert('RGB')
-
+    def _get_img(self, img):
+        img = cv2.imread(img)
+        img = preprocess_img(img, cfg.data.input_shape[0]).convert('RGB')
         return img
 
     def visualize_sim_img(self, img, k_neigbor=5):

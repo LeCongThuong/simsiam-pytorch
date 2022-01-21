@@ -1,21 +1,30 @@
 import torch
 import torch.nn as nn
 import torchvision
+import timm
+from simsiam.layers import GeM
 
 
-class LinearClassifier(nn.Module):
+class EmbeddingLayer(nn.Module):
 
     def __init__(
         self,
         input_dim: int,
-        num_classes: int,
+        embedding_dim: int,
     ) -> None:
         super().__init__()
-        self.model = nn.Sequential(                                                                                                           
-            nn.Linear(input_dim, num_classes)
+        self.GeM = GeM()
+        self.model = nn.Sequential(
+            nn.Linear(input_dim, embedding_dim),
+            nn.BatchNorm1d(embedding_dim),
+            nn.PReLU()
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.GeM(x)
+        # print(x.shape)
+        x = x.squeeze(-1).squeeze(-1)
+        # print("Shape of model before Neck: ", x.shape)
         return self.model(x)
 
 
@@ -71,12 +80,14 @@ class Encoder(nn.Module):
         pretrained: bool
     ):
         super().__init__()
-        resnet = getattr(torchvision.models, backbone)(pretrained=pretrained)
-        self.emb_dim = resnet.fc.in_features
-        self.model = nn.Sequential(*list(resnet.children())[:-1])
+        # resnet = getattr(torchvision.models, backbone)(pretrained=pretrained)
+        # self.emb_dim = resnet.fc.in_features
+        # self.model = nn.Sequential(*list(resnet.children())[:-1])
+        self.model = timm.create_model('xception', pretrained=True, num_classes=0, global_pool='')
+        self.emb_dim = self.model.bn4.num_features
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.model(x).squeeze()
+        return self.model(x) # .squeeze()
 
 
 class SimSiam(nn.Module):
@@ -87,12 +98,13 @@ class SimSiam(nn.Module):
         latent_dim: int,
         proj_hidden_dim: int,
         pred_hidden_dim: int,
+        load_pretrained: bool
     ) -> None:
 
         super().__init__()
 
         # Encoder network
-        self.encoder = Encoder(backbone=backbone, pretrained=False)
+        self.encoder = Encoder(backbone=backbone, pretrained=load_pretrained)
 
         # Projection (mlp) network
         self.projection_mlp = ProjectionMLP(
@@ -126,7 +138,7 @@ class ResNet(nn.Module):
     def __init__(
         self,
         backbone: str,
-        num_classes: int,
+        embedding_dim: int,
         pretrained: bool,
         freeze: bool
     ) -> None:
@@ -141,8 +153,9 @@ class ResNet(nn.Module):
                 param.requres_grad = False
 
         # Linear classifier
-        self.classifier = LinearClassifier(self.encoder.emb_dim, num_classes)
+        self.embedding_layer = EmbeddingLayer(self.encoder.emb_dim, embedding_dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         e = self.encoder(x)
-        return self.classifier(e)
+        # print("Shape of encoder: ", e.shape)
+        return self.embedding_layer(e)

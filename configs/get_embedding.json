@@ -1,20 +1,23 @@
 {
-    "use": "pretrained",
+    "use": "inferenced",
     "model": {
         "name": "embedding",
-        "backbone": "tf_efficientnetv2_s",
-        "weights_path": "runs/Jan17_18-38-37_hmi/pretrained_40.pt"
+        "pretrained": true,
+        "freeze": false,
+        "backbone": "xception",
+        "weights_path": "runs/Jan21_10-00-33_hmi/fine-tuned.pt",
+        "embedding_dim": 512
     },
     "data": {
-        "path": "/mnt/hdd/thuonglc/mocban/ocr_retrieval_dataset/origin/dainam_dataset/tt4",
+        "path": "/mnt/hdd/thuonglc/mocban/ocr_retrieval_dataset/origin/dainam_64_dataset/train",
         "input_shape": [
-            288,
-            288
+            64,
+            64
         ]
     },
     "create_embedding": {
         "embedding_path": "assets/embedding_vector/embedding.npy",
-        "batch_size": 128,
+        "batch_size": 512,
         "output_dir": "assets/embedding_vector"
     },
     "get_sim_img":{

@@ -1,0 +1,35 @@
+{
+    "model": {
+        "name": "fine-tuned",
+        "backbone": "xception",
+        "pretrained": true,
+        "freeze": false,
+        "weights_path": "",
+        "embedding_dim": 512
+    },
+    "data": {
+        "path": "/home/hmi/Documents/thuong_doc/mocban/Printed-Chinese-Character-OCR/train_test_retrieval_dataset",
+        "input_shape": [
+            64,
+            64
+        ],
+        "sample_per_cls": 8,
+        "augmentation": {
+            "resize_scale": 0.6,
+            "random_erase": 0.2,
+            "p_blur": 1
+        }
+    },
+    "train": {
+        "epochs": 90,
+        "batch_size": 512,
+        "lr": 3E-4,
+        "momentum": 0.9,
+        "weight_decay": 0.0,
+        "log_interval": 50,
+        "loss_margin": 0.2,
+        "eval_inter": 100,
+        "checkpoint_inter": 5
+    },
+    "device": "cuda"
+}

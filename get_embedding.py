@@ -7,7 +7,7 @@ import torch
 from tqdm.auto import tqdm
 from torch.utils.tensorboard import SummaryWriter
 
-from simsiam.models import Encoder
+from simsiam.models import Encoder, ResNet
 from simsiam.transforms import test_transforms
 from simsiam.dataset import DaiNamDataset
 import torch
@@ -23,6 +23,16 @@ def get_model(cfg):
         )
 
         if cfg.model.weights_path:
+            model.load_state_dict(torch.load(cfg.model.weights_path))
+    elif cfg.use == 'inferenced':
+        model = ResNet(
+            backbone=cfg.model.backbone,
+            embedding_dim=cfg.model.embedding_dim,
+            pretrained=cfg.model.pretrained,
+            freeze=cfg.model.freeze
+        )
+
+        if cfg.model.weights_path != "":
             model.load_state_dict(torch.load(cfg.model.weights_path))
     else:
         model = timm.create_model(cfg.model.backbone, pretrained=True, num_classes=0)
