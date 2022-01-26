@@ -1,0 +1,21 @@
+{
+    "model": {
+        "pretrained": true,
+        "freeze": false,
+        "backbone": "xception",
+        "weights_path": "runs/Jan21_10-00-33_hmi/fine-tuned.pt",
+        "embedding_dim": 512
+    },
+    "data": {
+        "path": "/home/hmi/Documents/thuong_doc/mocban/reconstruct_2d_2/japan_processed_test_imgs",
+        "input_shape": [
+            64,
+            64
+        ]
+    },
+    "embedding_info": {
+        "embedding_file_path": "assets/embedding_vector/embedding.npy",
+        "batch_size": 1024
+    },
+    "device": "cuda"
+}

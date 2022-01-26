@@ -8,7 +8,7 @@
         "embedding_dim": 512
     },
     "data": {
-        "path": "/home/hmi/Documents/thuong_doc/mocban/Printed-Chinese-Character-OCR/train_test_retrieval_dataset",
+        "path": "./data/metric_font_dataset",
         "input_shape": [
             64,
             64

@@ -1,24 +1,21 @@
 import os
-import json
-import argparse
 from types import SimpleNamespace
 
 import torch
-import torchvision
 from tqdm.auto import tqdm
 from torch.utils.tensorboard import SummaryWriter
 
-from simsiam.models import ResNet
-from simsiam.transforms import load_transforms, augment_transforms, test_transforms
-from simsiam.finetune_dataset import FontDataset
+from src.models import MetricLearningModel
+from src.transforms import load_transforms, augment_transforms, test_transforms
+from src.datasets import FontDataset
 from pytorch_metric_learning import samplers
 from pytorch_metric_learning import distances, losses, miners, reducers
 from pytorch_metric_learning.utils.accuracy_calculator import AccuracyCalculator
-from simsiam.utils import eval_finetuned_model
+from src.utils import eval_metric_model, parse_aug
 
 
 def main(cfg: SimpleNamespace) -> None:
-    model = ResNet(
+    model = MetricLearningModel(
         backbone=cfg.model.backbone,
         embedding_dim=cfg.model.embedding_dim,
         pretrained=cfg.model.pretrained,
@@ -46,14 +43,14 @@ def main(cfg: SimpleNamespace) -> None:
     accuracy_calculator = AccuracyCalculator(include=("precision_at_1", "mean_average_precision",
                                                       'mean_average_precision_at_r', 'r_precision'), k=None)
 
-    train_transform = load_transforms(cfg.data.input_shape, cfg.data.augmentation.p_blur)
-    train_dataset = FontDataset(cfg, os.path.join(cfg.data.path, 'train'), transform=train_transform)
+    train_transform = load_transforms(cfg)
+    train_dataset = FontDataset(cfg, mode='train', transform=train_transform)
 
-    query_transform = test_transforms(cfg.data.input_shape)
-    query_dataset = FontDataset(cfg, os.path.join(cfg.data.path, 'query'), transform=query_transform)
+    query_transform = test_transforms(cfg)
+    query_dataset = FontDataset(cfg, mode='query', transform=query_transform)
 
-    eval_transform = test_transforms(cfg.data.input_shape)
-    eval_dataset = FontDataset(cfg, os.path.join(cfg.data.path, 'eval'), transform=eval_transform)
+    eval_transform = test_transforms(cfg)
+    eval_dataset = FontDataset(cfg, mode='eval', transform=eval_transform)
 
     train_sampler = samplers.MPerClassSampler(train_dataset.label_list, cfg.data.sample_per_cls, batch_size=None,
                                               length_before_new_iter=len(train_dataset.label_list))
@@ -65,12 +62,7 @@ def main(cfg: SimpleNamespace) -> None:
                                                    pin_memory=True,
                                                    num_workers=torch.multiprocessing.cpu_count())
 
-    transforms = augment_transforms(
-        cfg=cfg,
-        input_shape=cfg.data.input_shape,
-        train_flag=True,
-        device=cfg.device
-    )
+    data_aug = augment_transforms(cfg=cfg)
 
     writer = SummaryWriter()
 
@@ -81,7 +73,7 @@ def main(cfg: SimpleNamespace) -> None:
             opt.zero_grad()
 
             x, y = x.to(cfg.device), y.to(cfg.device)
-            x = transforms(x)
+            x = data_aug(x)
             embedding = model(x)
             indices_tuple = mining_func(embedding, y)
             loss = loss_func(embedding, y, indices_tuple)
@@ -98,14 +90,7 @@ def main(cfg: SimpleNamespace) -> None:
                 )
 
             if n_iter % cfg.train.eval_inter == 0:
-                accuracies = eval_finetuned_model(query_dataset, eval_dataset, model, accuracy_calculator)
-                writer.add_scalar("eval/acc", scalar_value=float(accuracies["precision_at_1"]), global_step=n_iter)
-                writer.add_scalar("eval/mAP", scalar_value=float(accuracies['mean_average_precision']),
-                                  global_step=n_iter)
-                writer.add_scalar("eval/r_precision", scalar_value=float(accuracies['r_precision']), global_step=n_iter)
-                writer.add_scalar("eval/mean_average_precision_at_r",
-                                  scalar_value=float(accuracies['mean_average_precision_at_r']), global_step=n_iter)
-                model.train()
+                _ = eval_metric_model(query_dataset, eval_dataset, model, accuracy_calculator, writer, n_iter)
             n_iter += 1
         # save checkpoint
         if (epoch + 1) % cfg.train.checkpoint_inter == 0:
@@ -113,11 +98,5 @@ def main(cfg: SimpleNamespace) -> None:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--cfg", type=str, required=True, help="Path to config json file")
-    args = parser.parse_args()
-
-    with open(args.cfg, "r") as f:
-        cfg = json.loads(f.read(), object_hook=lambda d: SimpleNamespace(**d))
-
+    cfg = parse_aug()
     main(cfg)

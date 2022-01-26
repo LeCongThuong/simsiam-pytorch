@@ -1,14 +1,16 @@
 import torch
-from simsiam.losses import negative_cosine_similarity
+from src.losses import negative_cosine_similarity
 from pytorch_metric_learning import testers
 from tqdm.auto import tqdm
 import numpy as np
 import torch.nn.functional as F
 from PIL import Image
-import cv2
+import json
+import argparse
+from types import SimpleNamespace
 
 
-def eval_pretrained_model(eval_dataloader, query_dataset, pool_dataset, model, transforms, accuracy_calculator, device, writer, n_iter):
+def eval_self_sup_model(eval_dataloader, model, transforms, device, writer, n_iter):
     losses = []
     model.eval()
     with torch.no_grad():
@@ -33,13 +35,6 @@ def eval_pretrained_model(eval_dataloader, query_dataset, pool_dataset, model, t
             loss = loss1 / 2 + loss2 / 2
             losses.append(float(loss.cpu()))
     writer.add_scalar(tag="loss/eval", scalar_value=np.mean(losses), global_step=n_iter)
-
-    accuracies = eval_finetuned_model(query_dataset, pool_dataset, model.encoder, accuracy_calculator)
-
-    writer.add_scalar("eval/acc", scalar_value=float(accuracies["precision_at_1"]), global_step=n_iter)
-    writer.add_scalar("eval/mAP", scalar_value=float(accuracies['mean_average_precision']), global_step=n_iter)
-    writer.add_scalar("eval/r_precision", scalar_value=float(accuracies['r_precision']), global_step=n_iter)
-    writer.add_scalar("eval/mean_average_precision_at_r", scalar_value=float(accuracies['mean_average_precision_at_r']), global_step=n_iter)
     model.train()
 
 
@@ -83,7 +78,7 @@ def sort_by_name(file_name):
 
 
 def resize_and_pad(img, tgt_size, padding_value=255):
-    old_size = img.size  # old_size[0] is in (width, height) format
+    old_size = img.size
     ratio = float(tgt_size)/max(old_size)
     new_size = tuple([int(x*ratio) for x in old_size])
     # print(new_size)
@@ -96,20 +91,19 @@ def resize_and_pad(img, tgt_size, padding_value=255):
     return new_img
 
 
-def preprocess_img(cv_img, tgt_size, padding_value=255, blur_winsize=3):
-    # blur_test_img = cv2.GaussianBlur(cv_img, (blur_winsize, blur_winsize), 0)
+def preprocess_img(cv_img, tgt_size, padding_value=255):
     resized_img = resize_and_pad(Image.fromarray(cv_img).convert('L'), tgt_size, padding_value)
     return resized_img
 
 
-### convenient function from pytorch-metric-learning ###
+# convenient function from pytorch-metric-learning ###
 def get_all_embeddings(dataset, model):
     tester = testers.BaseTester()
     return tester.get_all_embeddings(dataset, model)
 
 
-### compute accuracy using AccuracyCalculator from pytorch-metric-learning ###
-def eval_finetuned_model(query_set, eval_set, model, accuracy_calculator):
+# compute accuracy using AccuracyCalculator from pytorch-metric-learning ###
+def eval_metric_model(query_set, eval_set, model, accuracy_calculator, writer, n_iter):
     query_embeddings, query_labels = get_all_embeddings(query_set, model)
     eval_embeddings, eval_labels = get_all_embeddings(eval_set, model)
     query_labels = query_labels.squeeze(1)
@@ -118,8 +112,26 @@ def eval_finetuned_model(query_set, eval_set, model, accuracy_calculator):
     accuracies = accuracy_calculator.get_accuracy(
         query_embeddings, eval_embeddings, query_labels, eval_labels, False
     )
+    writer.add_scalar("eval/acc", scalar_value=float(accuracies["precision_at_1"]), global_step=n_iter)
+    writer.add_scalar("eval/mAP", scalar_value=float(accuracies['mean_average_precision']),
+                      global_step=n_iter)
+    writer.add_scalar("eval/r_precision", scalar_value=float(accuracies['r_precision']), global_step=n_iter)
+    writer.add_scalar("eval/mean_average_precision_at_r",
+                      scalar_value=float(accuracies['mean_average_precision_at_r']), global_step=n_iter)
+    model.train()
+
     print("Test set accuracy (Precision@1) = {}".format(accuracies["precision_at_1"]))
     print(f"Test MAP: {accuracies['mean_average_precision']}")
     print(f"Test r_Precision: {accuracies['r_precision']}")
     print(f"Test mean_average_precision_at_r: {accuracies['mean_average_precision_at_r']}")
     return accuracies
+
+
+def parse_aug():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cfg", type=str, required=True, help="Path to config json file")
+    args = parser.parse_args()
+
+    with open(args.cfg, "r") as f:
+        cfg = json.loads(f.read(), object_hook=lambda d: SimpleNamespace(**d))
+    return cfg
