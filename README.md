@@ -29,7 +29,7 @@ B1. Create dataset that has the following format:\
 &nbsp;&nbsp;&nbsp;1/ \
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*.png \
 &nbsp;&nbsp;&nbsp;2/ \
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*.png \
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*.png
 
 B2. Modify parameters in the config file train_metric_learning.json such as: data.path, model.backbone, v.v
 B3. Run the following command
