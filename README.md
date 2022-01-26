@@ -46,5 +46,5 @@ B2. Run the following command
 ### Link to pretrained Xception on synthesis dataset [link](https://drive.google.com/file/d/1m8X-7gmAkOkADuNp5PPkKmVOKpFpADlB/view?usp=sharing)
 
 ### Todo:
-[x]: Implement metric learning model
+[x]: Implement metric learning model \
 []: Optimize
