@@ -43,4 +43,4 @@ B2. Run the following command
     python3 get_metric_mebedding.py --cfg CONFIG_PATH
     ```
 
-### Link to pretrained Xception on synthesis dataset (https://drive.google.com/file/d/1m8X-7gmAkOkADuNp5PPkKmVOKpFpADlB/view?usp=sharing)
+### Link to pretrained Xception on synthesis dataset [link](https://drive.google.com/file/d/1m8X-7gmAkOkADuNp5PPkKmVOKpFpADlB/view?usp=sharing)
