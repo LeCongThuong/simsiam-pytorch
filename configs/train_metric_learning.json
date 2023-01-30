@@ -8,12 +8,12 @@
         "embedding_dim": 512
     },
     "data": {
-        "path": "./data/metric_font_dataset",
+        "path": "/mnt/hdd/thuonglc/mocban/woodblock-ocr-recognition/datasets",
         "input_shape": [
             64,
             64
         ],
-        "sample_per_cls": 8,
+        "sample_per_cls": 32,
         "augmentation": {
             "resize_scale": 0.6,
             "random_erase": 0.2,
@@ -21,14 +21,14 @@
         }
     },
     "train": {
-        "epochs": 90,
-        "batch_size": 512,
+        "epochs": 100,
+        "batch_size": 1024,
         "lr": 3E-4,
         "momentum": 0.9,
         "weight_decay": 0.0,
         "log_interval": 50,
         "loss_margin": 0.2,
-        "eval_inter": 100,
+        "eval_inter": 3144,
         "checkpoint_inter": 5
     },
     "device": "cuda"

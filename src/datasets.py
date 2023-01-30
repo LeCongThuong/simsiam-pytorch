@@ -32,9 +32,9 @@ class FontDataset(Dataset):
         else:
             self.transform = transform
         self.img_path_list = list(Path(os.path.join(cfg.data.path, mode) if mode != "" else cfg.data.path).rglob('*.png'))
-        print(len(self.img_path_list))
         self.img_path_list.sort(key=sort_by_name)
-        self.label_list = [int(img_path.parts[-2]) for img_path in self.img_path_list]
+        print(len(self.img_path_list))
+        self.label_list = [ord(img_path.parts[-2]) for img_path in self.img_path_list]
 
     def __getitem__(self, idx):
         img_path = self.img_path_list[idx]

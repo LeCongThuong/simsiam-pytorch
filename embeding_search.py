@@ -57,7 +57,7 @@ class EmbeddingSearch:
 
     def _get_img(self, img_path):
         img = cv2.imread(img_path)
-        img = preprocess_img(img, cfg.data.input_shape[0]).convert('RGB')
+        img = preprocess_img(img, self.cfg.data.input_shape[0]).convert('RGB')
         return img
 
     def visualize_sim_img(self, img_path, k_neigbor=5):

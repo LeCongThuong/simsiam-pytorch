@@ -1,9 +1,12 @@
 tqdm~=4.49.0
 Pillow~=8.4.0
 torch
-torchvision~=0.9.1
+torchvision
 kornia~=0.6.2
 numpy~=1.19.5
 opencv-python~=4.5.4.60
 timm~=0.5.4
 matplotlib~=3.4.2
+pytorch-metric-learning
+tensorboard
+faiss-gpu

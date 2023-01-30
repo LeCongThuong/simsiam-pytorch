@@ -8,7 +8,8 @@ from torch.utils.tensorboard import SummaryWriter
 from src.models import MetricLearningModel
 from src.transforms import load_transforms, augment_transforms, test_transforms
 from src.datasets import FontDataset
-from pytorch_metric_learning import samplers
+# from pytorch_metric_learning import samplers
+from customize_sampler import MPerClassSampler
 from pytorch_metric_learning import distances, losses, miners, reducers
 from pytorch_metric_learning.utils.accuracy_calculator import AccuracyCalculator
 from src.utils import eval_metric_model, parse_aug
@@ -52,8 +53,8 @@ def main(cfg: SimpleNamespace) -> None:
     eval_transform = test_transforms(cfg)
     eval_dataset = FontDataset(cfg, mode='eval', transform=eval_transform)
 
-    train_sampler = samplers.MPerClassSampler(train_dataset.label_list, cfg.data.sample_per_cls, batch_size=None,
-                                              length_before_new_iter=len(train_dataset.label_list))
+    train_sampler = MPerClassSampler(train_dataset.label_list, cfg.data.sample_per_cls, batch_size=None,
+                                     length_before_new_iter=len(train_dataset.label_list))
     train_dataloader = torch.utils.data.DataLoader(train_dataset,
                                                    batch_size=cfg.train.batch_size,
                                                    sampler=train_sampler,
@@ -65,13 +66,12 @@ def main(cfg: SimpleNamespace) -> None:
     data_aug = augment_transforms(cfg=cfg)
 
     writer = SummaryWriter()
-
+    print("Len of dataloader: ", len(train_dataloader))
     n_iter = 0
     for epoch in range(cfg.train.epochs):
         pbar = tqdm(enumerate(train_dataloader), total=len(train_dataloader))
         for batch, (x, y) in pbar:
             opt.zero_grad()
-
             x, y = x.to(cfg.device), y.to(cfg.device)
             x = data_aug(x)
             embedding = model(x)

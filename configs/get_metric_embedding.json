@@ -3,11 +3,11 @@
         "pretrained": true,
         "freeze": false,
         "backbone": "xception",
-        "weights_path": "runs/Jan21_10-00-33_hmi/fine-tuned.pt",
+        "weights_path": "runs/Jan07_17-40-18_hmi/fine-tuned_49.pt",
         "embedding_dim": 512
     },
     "data": {
-        "path": "/home/hmi/Documents/thuong_doc/mocban/reconstruct_2d_2/japan_processed_test_imgs",
+        "path": "/mnt/hdd/thuonglc/mocban/woodblock-ocr-recognition/datasets/img_database",
         "input_shape": [
             64,
             64
