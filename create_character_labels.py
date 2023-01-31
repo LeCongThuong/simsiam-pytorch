@@ -11,7 +11,7 @@ from tqdm import tqdm
 def generate_labels(img_path, dest_dir, search_model, k_neigbor=10):
     neighbor_id_list = search_model.get_sim_img(img_path, k_neighbor=k_neigbor)
     query_img_stem = Path(img_path).stem
-    img = Image.open(img_path).convert('RGB')
+    img = Image.open(img_path).convert('L')
     fig, axes = plt.subplots(nrows=1, ncols=k_neigbor + 1, figsize=(k_neigbor * 2, 2 * 1))
     axes[0].imshow(img)
     axes[0].set_axis_off()
@@ -27,7 +27,7 @@ def generate_labels(img_path, dest_dir, search_model, k_neigbor=10):
 
 
 def run(args, embedding_search_model):
-    dest_dir = "data/output_test"
+    dest_dir = "data/output_convnext_3"
     Path(dest_dir).mkdir(exist_ok=True, parents=True)
     img_path_list = list(Path(args.img_dir).glob("*.png"))
     print(len(img_path_list))

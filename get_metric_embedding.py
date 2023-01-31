@@ -7,15 +7,14 @@ from tqdm.auto import tqdm
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-from src.models import MetricLearningModel
+from convnext_utils import ConvNextMetricLearningModel
 from src.transforms import test_transforms
 from src.datasets import DaiNamDataset
 from src.utils import parse_aug
 
 
 def get_model(cfg):
-    model = MetricLearningModel(backbone=cfg.model.backbone, embedding_dim=cfg.model.embedding_dim,
-                                pretrained=cfg.model.pretrained, freeze=False)
+    model = ConvNextMetricLearningModel(backbone=cfg.model.backbone, embedding_dim=cfg.model.embedding_dim, freeze=False)
     if cfg.model.weights_path != "":
         model.load_state_dict(torch.load(cfg.model.weights_path))
     model = model.to(cfg.device)

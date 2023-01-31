@@ -2,20 +2,20 @@
     "model": {
         "pretrained": true,
         "freeze": false,
-        "backbone": "xception",
-        "weights_path": "runs/Jan07_17-40-18_hmi/fine-tuned_49.pt",
+        "backbone": null,
+        "weights_path": "runs/Jan30_17-02-36_hmi/fine-tuned_49.pt",
         "embedding_dim": 512
     },
     "data": {
         "path": "/mnt/hdd/thuonglc/mocban/other_tasks/font_characters/nomnatong_re",
         "input_shape": [
-            64,
-            64
+            224,
+            224
         ]
     },
     "embedding_info": {
-        "embedding_file_path": "assets/embedding_vector/embedding.npy",
-        "batch_size": 1024
+        "embedding_file_path": "assets/embedding_vector/convnext_embedding.npy",
+        "batch_size": 48
     },
     "device": "cuda"
 }

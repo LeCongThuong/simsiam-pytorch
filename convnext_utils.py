@@ -31,39 +31,40 @@ class ConvNextMetricLearningModel(nn.Module):
         return self.embedding_layer(e)
 
 
-def load_convnextv2(checkpoint_path):
+def load_convnextv2(checkpoint_path=None):
     # device = torch.device(args.device)
     model = convnextv2_base(num_classes=1, drop_path_rate=0.1)
-    checkpoint = torch.load(checkpoint_path, map_location='cpu')
+    if checkpoint_path is not None:
+        checkpoint = torch.load(checkpoint_path, map_location='cpu')
 
-    print("Load pre-trained checkpoint from: %s" % checkpoint_path)
-    checkpoint_model = checkpoint['model']
-    state_dict = model.state_dict()
-    for k in ['head.weight', 'head.bias']:
-        if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
-            print(f"Removing key {k} from pretrained checkpoint")
-            del checkpoint_model[k]
+        print("Load pre-trained checkpoint from: %s" % checkpoint_path)
+        checkpoint_model = checkpoint['model']
+        state_dict = model.state_dict()
+        for k in ['head.weight', 'head.bias']:
+            if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
+                print(f"Removing key {k} from pretrained checkpoint")
+                del checkpoint_model[k]
 
-    # remove decoder weights
-    checkpoint_model_keys = list(checkpoint_model.keys())
-    for k in checkpoint_model_keys:
-        if 'decoder' in k or 'mask_token' in k or \
-                'proj' in k or 'pred' in k:
-            print(f"Removing key {k} from pretrained checkpoint")
-            del checkpoint_model[k]
+        # remove decoder weights
+        checkpoint_model_keys = list(checkpoint_model.keys())
+        for k in checkpoint_model_keys:
+            if 'decoder' in k or 'mask_token' in k or \
+                    'proj' in k or 'pred' in k:
+                print(f"Removing key {k} from pretrained checkpoint")
+                del checkpoint_model[k]
 
-    checkpoint_model = remap_checkpoint_keys(checkpoint_model)
-    load_state_dict(model, checkpoint_model)
-    # model.to(device)
-    #
-    # if args.model_ema:
-    #     # Important to create EMA model after cuda(), DP wrapper, and AMP but before SyncBN and DDP wrapper
-    #     model_ema = ModelEma(
-    #         model,
-    #         decay=args.model_ema_decay,
-    #         device='cpu' if args.model_ema_force_cpu else '',
-    #         resume='')
-    #     print("Using EMA with decay = %.8f" % args.model_ema_decay)
+        checkpoint_model = remap_checkpoint_keys(checkpoint_model)
+        load_state_dict(model, checkpoint_model)
+        # model.to(device)
+        #
+        # if args.model_ema:
+        #     # Important to create EMA model after cuda(), DP wrapper, and AMP but before SyncBN and DDP wrapper
+        #     model_ema = ModelEma(
+        #         model,
+        #         decay=args.model_ema_decay,
+        #         device='cpu' if args.model_ema_force_cpu else '',
+        #         resume='')
+        #     print("Using EMA with decay = %.8f" % args.model_ema_decay)
 
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
