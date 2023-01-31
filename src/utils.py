@@ -110,7 +110,7 @@ def eval_metric_model(query_set, eval_set, model, accuracy_calculator, writer, n
     eval_labels = eval_labels.squeeze(1)
     print("Computing accuracy")
     accuracies = accuracy_calculator.get_accuracy(
-        query_embeddings, eval_embeddings, query_labels, eval_labels, False
+        query_embeddings.detach().cpu(), eval_embeddings.detach().cpu(), query_labels, eval_labels, False
     )
     writer.add_scalar("eval/acc", scalar_value=float(accuracies["precision_at_1"]), global_step=n_iter)
     writer.add_scalar("eval/mAP", scalar_value=float(accuracies['mean_average_precision']),

@@ -8,7 +8,7 @@ import os
 
 class DaiNamDataset(Dataset):
     def __init__(self, cfg, mode='train', transform=None):
-        self.img_path_list = list(Path(os.path.join(cfg.data.path, mode) if mode != "" else cfg.data.path).glob("*.png"))
+        self.img_path_list = list(Path(os.path.join(cfg.data.path, mode) if mode != "" else cfg.data.path).glob("*.png")) + list(Path(os.path.join(cfg.data.path, mode) if mode != "" else cfg.data.path).rglob("*.jpg"))
         self.img_path_list.sort(key=sort_by_name)
         self.transform = transform
         if transform is None:
@@ -16,7 +16,7 @@ class DaiNamDataset(Dataset):
 
     def __getitem__(self, index):
         img_path = self.img_path_list[index]
-        img = Image.open(img_path).convert('RGB')
+        img = Image.open(img_path).convert('L')
         img = self.transform(img)
         return img
 
@@ -31,14 +31,14 @@ class FontDataset(Dataset):
             self.transform = load_transforms(cfg)
         else:
             self.transform = transform
-        self.img_path_list = list(Path(os.path.join(cfg.data.path, mode) if mode != "" else cfg.data.path).rglob('*.png'))
+        self.img_path_list = list(Path(os.path.join(cfg.data.path, mode) if mode != "" else cfg.data.path).rglob('*.png')) + list(Path(os.path.join(cfg.data.path, mode) if mode != "" else cfg.data.path).rglob("*.jpg"))
         self.img_path_list.sort(key=sort_by_name)
         print(len(self.img_path_list))
-        self.label_list = [ord(img_path.parts[-2]) for img_path in self.img_path_list]
+        self.label_list = [int(img_path.parts[-2]) for img_path in self.img_path_list]
 
     def __getitem__(self, idx):
         img_path = self.img_path_list[idx]
-        img = Image.open(img_path).convert('RGB')
+        img = Image.open(img_path).convert('L')
         img = self.transform(img)
         img_label = self.label_list[idx]
         return img, img_label

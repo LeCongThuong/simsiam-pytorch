@@ -7,16 +7,16 @@ import torchvision.transforms as T
 from PIL import Image
 
 
-MEAN = (0.5, 0.5, 0.5)
-STD = (0.5, 0.5, 0.5)
+MEAN = (0.5, )
+STD = (0.5,)
 
 
 def augment_transforms(cfg) -> nn.Sequential:
     augs = nn.Sequential(
-        kornia.augmentation.ColorJitter(0.2, 0.3, 0.2, 0.3, p=0.5),
+       # kornia.augmentation.ColorJitter(0.2, 0.3, 0.2, 0.3, p=0.5),
         kornia.augmentation.RandomGaussianNoise(std=0.3),
         kornia.augmentation.RandomErasing(scale=(0.02, cfg.data.augmentation.random_erase), value=1, p=0.3),
-        kornia.augmentation.RandomGrayscale(p=1),
+       # kornia.augmentation.RandomGrayscale(p=1),
         kornia.augmentation.RandomResizedCrop(
             size=cfg.data.input_shape,
             scale=(cfg.data.augmentation.resize_scale, 1.0),

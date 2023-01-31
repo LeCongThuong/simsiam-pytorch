@@ -14,17 +14,24 @@ from pytorch_metric_learning import distances, losses, miners, reducers
 from pytorch_metric_learning.utils.accuracy_calculator import AccuracyCalculator
 from src.utils import eval_metric_model, parse_aug
 
+from convnext_utils import ConvNextMetricLearningModel
+
 
 def main(cfg: SimpleNamespace) -> None:
-    model = MetricLearningModel(
+    # model = MetricLearningModel(
+    #     backbone=cfg.model.backbone,
+    #     embedding_dim=cfg.model.embedding_dim,
+    #     pretrained=cfg.model.pretrained,
+    #     freeze=cfg.model.freeze
+    # )
+    model = ConvNextMetricLearningModel(
         backbone=cfg.model.backbone,
         embedding_dim=cfg.model.embedding_dim,
-        pretrained=cfg.model.pretrained,
         freeze=cfg.model.freeze
     )
 
-    if cfg.model.weights_path != "":
-        model.encoder.load_state_dict(torch.load(cfg.model.weights_path))
+    # if cfg.model.weights_path != "":
+    #     model.encoder.load_state_dict(torch.load(cfg.model.weights_path))
 
     model = model.to(cfg.device)
 
@@ -42,7 +49,7 @@ def main(cfg: SimpleNamespace) -> None:
         margin=cfg.train.loss_margin, distance=distance, type_of_triplets="semihard"
     )
     accuracy_calculator = AccuracyCalculator(include=("precision_at_1", "mean_average_precision",
-                                                      'mean_average_precision_at_r', 'r_precision'), k=None)
+                                                      'mean_average_precision_at_r', 'r_precision'), k=None, device=torch.device("cpu"))
 
     train_transform = load_transforms(cfg)
     train_dataset = FontDataset(cfg, mode='train', transform=train_transform)
@@ -70,6 +77,8 @@ def main(cfg: SimpleNamespace) -> None:
     n_iter = 0
     for epoch in range(cfg.train.epochs):
         pbar = tqdm(enumerate(train_dataloader), total=len(train_dataloader))
+        # if n_iter % cfg.train.eval_inter == 0:
+        # _ = eval_metric_model(query_dataset, eval_dataset, model, accuracy_calculator, writer, n_iter)
         for batch, (x, y) in pbar:
             opt.zero_grad()
             x, y = x.to(cfg.device), y.to(cfg.device)
@@ -83,6 +92,7 @@ def main(cfg: SimpleNamespace) -> None:
 
             if n_iter % cfg.train.log_interval == 0:
                 writer.add_scalar(tag="loss", scalar_value=float(loss), global_step=n_iter)
+                writer.add_scalar(tag="num_triplet", scalar_value=float(mining_func.num_triplets), global_step=n_iter)
                 print(
                     "Epoch {} Iteration {}: Loss = {}, Number of mined triplets = {}".format(
                         epoch, n_iter, loss, mining_func.num_triplets

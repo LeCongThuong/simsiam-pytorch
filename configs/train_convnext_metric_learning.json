@@ -1,0 +1,34 @@
+{
+    "model": {
+        "name": "fine-tuned",
+        "backbone": "/mnt/hdd/thuonglc/mocban/woodblock-ocr-recognition/convnextv2_reimplement/outputs/checkpoints/checkpoint-47.pth",
+        "freeze": false,
+        "weights_path": "",
+        "embedding_dim": 512
+    },
+    "data": {
+        "path": "/mnt/hdd/thuonglc/mocban/other_tasks/ocr_recog_dataset",
+        "input_shape": [
+            224,
+            224
+        ],
+        "sample_per_cls": 2,
+        "augmentation": {
+            "resize_scale": 0.6,
+            "random_erase": 0.2,
+            "p_blur": 1
+        }
+    },
+    "train": {
+        "epochs": 100,
+        "batch_size": 48,
+        "lr": 3E-4,
+        "momentum": 0.9,
+        "weight_decay": 0.05,
+        "log_interval": 10,
+        "loss_margin": 0.2,
+        "eval_inter": 2000,
+        "checkpoint_inter": 5
+    },
+    "device": "cuda"
+}
